@@ -1,28 +1,67 @@
 package ca.bcit.engineering.project.zilong.dt2scores.feature;
 
+import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.multidex.MultiDex;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.MenuItem;
-import android.webkit.ValueCallback;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.TextView;
 
-import java.util.logging.Logger;
+import ca.bcit.engineering.project.zilong.dt2scores.feature.model.Match;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnListFragmentInteractionListener, OnFragmentInteractionListener {
 
-    private WebView myWebView;
+    private MenuItem menuItem;
+    private ViewPager mViewPager;
 
-    public final String SCORE_PAGE = "score";
-    public final String NEWS_PAGE = "news";
-    public final String VIDEO_PAGE = "video";
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-    private String currentPage = SCORE_PAGE;
+        mViewPager = findViewById(R.id.ViewPager);
+
+        BottomNavigationView navigation = findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        setupViewPager(mViewPager, navigation);
+    }
+
+    private void setupViewPager(ViewPager viewPager, final BottomNavigationView bottomNavigationView) {
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                if (menuItem != null) {
+                    menuItem.setChecked(false);
+                } else {
+                    bottomNavigationView.getMenu().getItem(0).setChecked(false);
+                }
+                menuItem = bottomNavigationView.getMenu().getItem(position);
+                menuItem.setChecked(true);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+            }
+        });
+
+
+        BottomAdapter adapter = new BottomAdapter(getSupportFragmentManager());
+
+        adapter.addFragment(new MatchFragment());
+        adapter.addFragment(new NewsFragment());
+        adapter.addFragment(new VideoFragment());
+        viewPager.setAdapter(adapter);
+    }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -31,103 +70,35 @@ public class MainActivity extends AppCompatActivity {
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             int id = item.getItemId();
             if (id == R.id.navigation_score) {
-                loadMainPage();
+                //loadMainPage();
+                mViewPager.setCurrentItem(0);
                 return true;
             } else if (id == R.id.navigation_news) {
-                loadNewsPage();
+                //loadNewsPage();
+                mViewPager.setCurrentItem(1);
                 return true;
             } else if (id == R.id.navigation_video) {
-                loadVideoPage();
+                //loadVideoPage();
+                mViewPager.setCurrentItem(2);
                 return true;
             }
             return false;
         }
     };
 
-    protected void loadMainPage() {
-        currentPage = SCORE_PAGE;
-        myWebView.loadUrl("https://cybersportscore.com/en/dota-2");
-    }
+    @Override
+    public void onListFragmentInteraction(Match item) {
 
-    protected void loadNewsPage() {
-        currentPage = NEWS_PAGE;
-        myWebView.loadUrl("https://news.google.com/topics/CAAqKAgKIiJDQkFTRXdvS0wyMHZNR1JzYTNkdU1SSUZaVzR0UjBJb0FBUAE?oc=3");
-
-
-//        myWebView.evaluateJavascript("javascript:alert('1')", new ValueCallback<String>() {
-//            @Override
-//            public void onReceiveValue(String value) {
-//                //此处为 js 返回的结果
-//            }
-//        });
-    }
-
-    protected void loadVideoPage() {
-        currentPage = VIDEO_PAGE;
-        myWebView.loadUrl("https://www.youtube.com/channel/UCjkem1Rik-q4xKeETu9geUw/recent");
-    }
-
-    public String getCurrentPage() {
-        return currentPage;
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    public void onFragmentInteraction(Uri uri) {
 
-        // mTextMessage = (TextView) findViewById(R.id.message);
-        myWebView = (WebView) findViewById(R.id.webview);
-
-        setUpWebView();
-        loadMainPage();
-
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
 
-    // reset web view client
-    protected void setUpWebView() {
-
-        myWebView.getSettings().setJavaScriptEnabled(true);
-
-        myWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-
-                return super.shouldOverrideUrlLoading(view, url);
-            }
-
-            public void removeEleByCls(String classname) {
-                myWebView.loadUrl("javascript:(function() { " +
-                        "document.getElementsByClassName('" + classname + "')[0].style.display='none'; })()");
-            }
-
-            public void removeEleById(String id) {
-                myWebView.loadUrl("javascript:(function() { " +
-                        "document.getElementById('" + id + "').style.display='none'; })()");
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                // hide element by class name
-                removeEleByCls("pGxpHc"); // google news header
-                removeEleByCls("XCz6Hb"); // google news Dota2 header
-
-                removeEleByCls("header-bar"); // Youtube research bar
-                removeEleByCls("c4-tabbed-header-banner"); // Dota2 header
-                removeEleByCls("c4-tabbed-header-channel"); // Dota2 header
-                removeEleByCls("scbrr-tabs"); // Dota2 header tabs
-
-                Log.d("main", "load script");
-
-                // hide element by id
-                //myWebView.loadUrl("javascript:(function() { " +
-                //        "document.getElementById('your_id').style.display='none';})()");
-
-            }
-        });
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
     }
-
 }
